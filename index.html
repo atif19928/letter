@@ -35,6 +35,24 @@
   .screen.active { opacity: 1; pointer-events: auto; transform: translateX(0); }
   .screen.exiting { transform: translateX(-50px); opacity: 0; }
 
+  /* mobile: pages scroll hote hain, neeche 240px khali band
+     taake next-button kabhi corner bear/bubble se na takraya */
+  @media (max-width: 899px) {
+    .screen:not(#screen1) {
+      justify-content: flex-start;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      padding: 24px 20px 240px;
+    }
+    #screen1:not(.revealed) { overflow-y: hidden; }
+    #screen1.revealed {
+      justify-content: flex-start;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      padding: 24px 20px 240px;
+    }
+  }
+
   .card {
     background: rgba(255, 255, 255, 0.92);
     background-image: linear-gradient(0deg, rgba(253, 242, 248, 0.55), rgba(255, 255, 255, 0.6));
@@ -189,6 +207,13 @@
     font-family: inherit;
     position: relative;
     z-index: 5;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    white-space: nowrap;
+    line-height: 1;
+    max-width: 100%;
   }
   .btn-next:hover { transform: translateY(-3px) scale(1.05); box-shadow: 0 12px 30px rgba(244,114,182,0.5); }
   #next1 { pointer-events: none; }
@@ -223,6 +248,12 @@
     font-weight: 700;
     letter-spacing: 0.4px;
     font-family: inherit;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    white-space: nowrap;
+    line-height: 1;
   }
   .btn.yes {
     background: linear-gradient(135deg, #34d399, #10b981);
@@ -293,7 +324,7 @@
     pointer-events: none;
     transition: bottom .5s ease;
   }
-  body.bear-up .bear-fixed { bottom: 94px; }
+  @media (min-width: 900px) { body.bear-up .bear-fixed { bottom: 94px; } }
 
   .bear { position: absolute; inset: 0; animation: bearBob 3.6s ease-in-out infinite; }
 
@@ -377,9 +408,21 @@ background: #eccca4; border-radius: 50%;
   @keyframes bubblePop { from { opacity: 0; transform: translateY(10px) scale(.8); } to { opacity: 1; transform: none; } }
   @keyframes bubbleFloat { 0%,100% { margin-top: 0; } 50% { margin-top: -6px; } }
 
-  @media (max-width: 640px) {
-    .bear-fixed { transform-origin: left bottom; transform: scale(.78); }
-    .bear-bubble { left: 92px; width: 146px; font-size: .82rem; }
+  @media (max-width: 899px) {
+    .bear-bubble { left: 158px; top: 26px; width: 140px; font-size: .78rem; padding: 7px 10px; line-height: 1.4; }
+    body.bear-flow #bearFixed {
+      position: relative;
+      left: auto;
+      right: auto;
+      bottom: auto;
+      top: auto;
+      z-index: auto;
+      transform: scale(.85);
+      transform-origin: left top;
+      margin: 8px auto 0 12px;
+      align-self: flex-start;
+      flex-shrink: 0;
+    }
   }
 
   /* chhota bear (bubble wala) — pink theme */
@@ -578,6 +621,15 @@ background: #eccca4; border-radius: 50%;
   }
   setBear(1);
 
+  // mobile: chhota bear page ke flow mein button ke neeche
+  function moveBearTo(n) {
+    const t = document.getElementById("screen" + n);
+    if (!t) return;
+    document.body.classList.add("bear-flow");
+    const b = document.getElementById("bearFixed");
+    if (b && b.parentNode !== t) t.appendChild(b);
+  }
+
   // ---------- bara silent bear: card ke saath ----------
   const bearBig = document.getElementById("bearBig");
   const bearScale = bearBig.querySelector(".bear-scale");
@@ -595,24 +647,15 @@ background: #eccca4; border-radius: 50%;
 
   function placeBigBear() {
     try {
+      // MOBILE: bada bear nahi dikhata, sirf chota pink bear
+      if (window.innerWidth < 900) {
+        bearBig.style.display = "none";
+        return;
+      }
       const el = anchorForBear();
       if (!el) return;
       const r = el.getBoundingClientRect();
       if (!r.width || !r.height) return;
-
-      // MOBILE: bear card ke peeche se jhaakta hai (head upar)
-      if (window.innerWidth < 900) {
-        const scale = Math.min(1.5, Math.max(0.85, window.innerHeight / 340));
-        const bearH = 170 * scale;
-        let top = r.top - bearH * 0.72;
-        if (top < 6) top = 6;
-        bearBig.style.display = "block";
-        bearBig.style.transform = "none";
-        bearBig.style.top = top + "px";
-        bearBig.style.right = "10px";
-        bearScale.style.transform = "scale(" + scale + ")";
-        return;
-      }
 
       // DESKTOP: card ke side mein
       const freeRight = (window.innerWidth - 620) / 2 - 44;
@@ -642,6 +685,7 @@ background: #eccca4; border-radius: 50%;
     setTimeout(() => {
       envWrap.style.display = "none";
       screen1.classList.add("revealed");
+      moveBearTo(1);
       revealIn(1, 0);
       placeBigBear();
     }, 1120);
@@ -657,6 +701,7 @@ background: #eccca4; border-radius: 50%;
     setTimeout(() => {
       from.classList.remove("active", "exiting");
       to.classList.add("active");
+      moveBearTo(n);
       const list = nodesByScreen[n];
       list.forEach(el => el.classList.remove("show"));
       revealIn(n, 0);
@@ -714,6 +759,7 @@ background: #eccca4; border-radius: 50%;
     setTimeout(() => {
       from.classList.remove("active", "exiting");
       document.getElementById("screen5").classList.add("active");
+      moveBearTo(5);
       document.getElementById("finalCard").classList.add("pop");
       setBear(5);
       placeBigBear();
