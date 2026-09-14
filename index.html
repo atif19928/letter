@@ -1,0 +1,780 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Sorry Hurain 🥺</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: -apple-system, 'Segoe UI', 'Poppins', Arial, sans-serif;
+    background: linear-gradient(160deg, #fdf6f0 0%, #fbeef3 45%, #eaf6f9 100%);
+    min-height: 100vh;
+    height: 100%;
+    overflow: hidden;
+    color: #4a4a5a;
+  }
+
+  /* ---------- Screens & 3D card ---------- */
+  .screen {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 24px 20px 96px;
+    opacity: 0;
+    pointer-events: none;
+    transform: translateX(50px);
+    transition: opacity 0.5s ease, transform 0.5s ease;
+    perspective: 1400px;
+  }
+  .screen.active { opacity: 1; pointer-events: auto; transform: translateX(0); }
+  .screen.exiting { transform: translateX(-50px); opacity: 0; }
+
+  .card {
+    background: rgba(255, 255, 255, 0.92);
+    background-image: linear-gradient(0deg, rgba(253, 242, 248, 0.55), rgba(255, 255, 255, 0.6));
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(255, 255, 255, 0.8);
+    border-radius: 26px;
+    padding: clamp(22px, 5vw, 42px);
+    max-width: 620px;
+    width: 100%;
+    box-shadow: 0 30px 80px rgba(190, 100, 140, 0.18), 0 4px 18px rgba(0, 0, 0, 0.05);
+    transform-style: preserve-3d;
+    transform-origin: center center;
+  }
+
+  .screen.active .card:not(.peek) { animation: cardIn 0.9s cubic-bezier(.2,.9,.3,1.15) both; }
+  @keyframes cardIn {
+    0%   { transform: rotateY(-52deg) scale(0.9) translateX(-30px); opacity: 0; }
+    100% { transform: rotateY(0) scale(1) translateX(0); opacity: 1; }
+  }
+
+  .screen.exiting .card:not(.peek) { animation: cardOut 0.4s ease forwards; }
+  @keyframes cardOut { to { transform: rotateY(55deg) scale(0.88); opacity: 0; } }
+
+  .screen.active .card { transition: transform 0.25s ease; }
+
+  .msg-line {
+    display: block;
+    opacity: 0;
+    transform: translateY(14px);
+    font-size: clamp(1rem, 4.2vw, 1.25rem);
+    line-height: 1.8;
+    color: #55556a;
+  }
+  .msg-line.show { animation: lineIn 0.7s cubic-bezier(.34,1.2,.64,1) forwards; }
+  @keyframes lineIn { to { opacity: 1; transform: translateY(0); } }
+  .msg-line.big { font-weight: 700; font-size: clamp(1.3rem, 4.8vw, 1.6rem); color: #b83280; }
+  .msg-line.spacer { height: 0.5em; }
+
+  .heart-top { font-size: clamp(2rem, 8vw, 3.2rem); animation: heartBeat 1.6s ease-in-out infinite; display: inline-block; }
+  @keyframes heartBeat {
+    0%, 100% { transform: scale(1); }
+    15% { transform: scale(1.18) rotate(-5deg); }
+    30% { transform: scale(1); }
+    45% { transform: scale(1.12) rotate(4deg); }
+    60% { transform: scale(1); }
+  }
+
+  /* ---------- ENVELOPE INTRO (screen 1) ---------- */
+  .env-wrap {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+    z-index: 6;
+  }
+  .envelope {
+    position: relative;
+    width: min(90vw, 470px);
+    height: min(62vw, 300px);
+    cursor: pointer;
+    perspective: 1000px;
+  }
+  .env-body, .env-pocket, .env-flap { position: absolute; }
+  .env-body {
+    inset: 0;
+    background: linear-gradient(135deg, #fb9cc0, #f472b6);
+    border-radius: 12px;
+    box-shadow: 0 26px 60px rgba(244, 114, 182, 0.42);
+  }
+  .env-body::after {
+    content: "";
+    position: absolute; inset: 0;
+    border-radius: 12px;
+    background: linear-gradient(135deg, rgba(255,255,255,.3), transparent 42%);
+  }
+  .env-pocket {
+    left: 0; bottom: 0; width: 100%; height: 60%;
+    background: linear-gradient(180deg, #fb9cc0, #f0629c);
+    clip-path: polygon(0 20%, 50% 100%, 100% 20%);
+    z-index: 3;
+  }
+  .env-flap {
+    inset: 0;
+    left: 0; top: 0; width: 100%; height: 100%;
+    background: linear-gradient(180deg, #ee8cb4, #e06aa8);
+    clip-path: polygon(0 0, 100% 0, 50% 60%);
+    transform-origin: top center;
+    transition: transform 0.55s cubic-bezier(.6,.05,.4,1);
+    z-index: 4;
+  }
+  .env-seal {
+    position: absolute;
+    left: 50%; top: 50%;
+    width: 64px; height: 64px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 33px;
+    background: #fff;
+    border-radius: 50%;
+    box-shadow: 0 8px 18px rgba(0,0,0,.18);
+    z-index: 5;
+    animation: sealBreath 1.7s ease-in-out infinite;
+    transform: translate(-50%, -50%);
+  }
+  @keyframes sealBreath {
+    0%, 100% { transform: translate(-50%,-50%) scale(1); }
+    50% { transform: translate(-50%,-50%) scale(1.12) rotate(6deg); }
+  }
+  .env-greeting {
+    margin-bottom: 30px;
+    font-size: clamp(1.6rem, 7.5vw, 2.25rem);
+    font-weight: 800;
+    color: #b83280;
+    letter-spacing: 0.2px;
+  }
+  .env-hint {
+    margin-top: 26px;
+    font-size: 1.02rem;
+    color: #a05c82;
+    font-weight: 700;
+    animation: hintBlink 1.9s ease-in-out infinite;
+  }
+  @keyframes hintBlink { 0%,100% { opacity: 1; } 50% { opacity: .45; } }
+
+  .env-wrap.opening .env-flap { transform: rotateX(170deg); z-index: 2; }
+  .env-wrap.opening .env-seal { animation: sealPop .5s ease forwards; }
+  @keyframes sealPop { to { transform: translate(-50%,-50%) scale(2.4) rotate(25deg); opacity: 0; } }
+  .env-wrap.opening .env-hint { opacity: 0; transition: opacity .3s; }
+
+  .env-wrap.gone .envelope { animation: envAway .45s ease forwards; }
+  @keyframes envAway { to { transform: translateY(140px) scale(.5) rotate(8deg); opacity: 0; } }
+
+  #card1, #next1 { display: none; }
+  #screen1.revealed #card1 { display: block; animation: cardIn 0.9s cubic-bezier(.2,.9,.3,1.15) both; }
+  #screen1.revealed #next1 { display: inline-block; animation: fadeUp 0.6s ease 0.4s both; }
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+
+  /* ---------- Buttons ---------- */
+  .btn-next {
+    margin-top: 26px;
+    padding: 13px 40px;
+    font-size: 1rem;
+    border: none;
+    border-radius: 50px;
+    cursor: pointer;
+    background: linear-gradient(135deg, #f472b6, #fb7185);
+    color: #fff;
+    font-weight: 700;
+    letter-spacing: 0.4px;
+    box-shadow: 0 8px 22px rgba(244, 114, 182, 0.35);
+    transition: transform 0.2s ease, box-shadow 0.2s ease, opacity .5s ease;
+    font-family: inherit;
+    position: relative;
+    z-index: 5;
+  }
+  .btn-next:hover { transform: translateY(-3px) scale(1.05); box-shadow: 0 12px 30px rgba(244,114,182,0.5); }
+  #next1 { pointer-events: none; }
+  #screen1.revealed #next1 { pointer-events: auto; }
+
+  /* ---------- YES / NO fixed bar ---------- */
+  #btnBar {
+    position: fixed;
+    left: 0; right: 0; bottom: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 24px;
+    padding: 14px;
+    background: rgba(255, 255, 255, 0.78);
+    backdrop-filter: blur(10px);
+    border-top: 1px solid rgba(255, 255, 255, 0.8);
+    z-index: 50;
+    opacity: 0;
+    transform: translateY(70px);
+    transition: opacity .5s ease, transform .5s cubic-bezier(.34,1.3,.64,1);
+    pointer-events: none;
+  }
+  #btnBar.visible { opacity: 1; transform: translateY(0); pointer-events: auto; }
+
+  #btnBar .btn {
+    padding: 14px 42px;
+    font-size: 1.05rem;
+    border: none;
+    border-radius: 50px;
+    cursor: pointer;
+    font-weight: 700;
+    letter-spacing: 0.4px;
+    font-family: inherit;
+  }
+  .btn.yes {
+    background: linear-gradient(135deg, #34d399, #10b981);
+    color: #fff;
+    box-shadow: 0 10px 24px rgba(16, 185, 129, 0.4);
+    animation: yesPulse 1.8s ease-in-out infinite;
+    order: 1;
+  }
+  @keyframes yesPulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.06); } }
+  .btn.no {
+    background: linear-gradient(135deg, #e2e8f0, #cbd5e1);
+    color: #64748b;
+    box-shadow: 0 6px 16px rgba(100, 116, 139, 0.3);
+    order: 2;
+  }
+  .btn.no.teleporting { animation: hop 0.3s ease forwards; }
+  @keyframes hop {
+    0%   { transform: translate3d(var(--x), 0, 0) rotate(0); }
+    45%  { transform: translate3d(var(--x), var(--y), 0) rotate(14deg) scale(1.12); }
+    100% { transform: translate3d(var(--x), var(--y), 0) rotate(3deg); }
+  }
+
+  /* ---------- Celebration ---------- */
+  #confettiLayer { position: fixed; inset: 0; pointer-events: none; z-index: 60; overflow: hidden; }
+
+  .final-card {
+    background: rgba(255, 255, 255, 0.92);
+    border-radius: 26px;
+    padding: clamp(28px, 6vw, 50px);
+    max-width: 560px;
+    width: 100%;
+    box-shadow: 0 30px 80px rgba(190,100,140,0.2);
+    border: 1px solid rgba(255,255,255,0.8);
+    transform: scale(0.5) rotate(-8deg);
+    opacity: 0;
+    transition: transform 0.9s cubic-bezier(.34,1.56,.64,1), opacity 0.6s ease;
+    text-align: center;
+  }
+  .final-card.pop { transform: scale(1) rotate(0deg); opacity: 1; }
+  .handshake { font-size: clamp(2.8rem, 11vw, 4.8rem); display: inline-block; animation: handWobble 1.2s ease-in-out infinite; }
+  @keyframes handWobble { 0%,100% { transform: rotate(-10deg) translateY(0); } 50% { transform: rotate(10deg) translateY(-6px); } }
+
+  .burst-heart { position: fixed; font-size: 22px; pointer-events: none; z-index: 70; animation: burstKick 2.6s ease-out forwards; }
+  @keyframes burstKick {
+    0% { transform: translate(0,0) scale(.6); opacity: 1; }
+    100% { transform: translate(var(--dx), var(--dy)) scale(1.5) rotate(var(--rot)); opacity: 0; }
+  }
+
+  /* ---------- background (kamm & naram) ---------- */
+  .floating { position: fixed; font-size: 16px; opacity: 0; animation: floatUp linear infinite; user-select: none; pointer-events: none; z-index: 1; }
+  @keyframes floatUp {
+    0% { transform: translateY(0) rotate(0deg); opacity: 0; }
+    15% { opacity: .5; }
+    100% { transform: translateY(-110vh) rotate(30deg); opacity: 0; }
+  }
+  .sparkle { position: fixed; font-size: 13px; pointer-events: none; animation: twinkleLine 3s ease-in-out infinite; }
+  @keyframes twinkleLine { 0%,100% { opacity: .1; } 50% { opacity: .9; } }
+
+  /* ---------- TEDDY BEAR (HAR PAGE PE) ---------- */
+  .bear-fixed {
+    position: fixed;
+    left: clamp(6px, 2vw, 18px);
+    bottom: 14px;
+    width: 150px;
+    height: 170px;
+    z-index: 30;
+    user-select: none;
+    pointer-events: none;
+    transition: bottom .5s ease;
+  }
+  body.bear-up .bear-fixed { bottom: 94px; }
+
+  .bear { position: absolute; inset: 0; animation: bearBob 3.6s ease-in-out infinite; }
+
+  .bear-body-el {
+    position: absolute; left: 50%; top: 100px; width: 96px; height: 72px; margin-left: -48px;
+    background: linear-gradient(180deg, #c08a5a, #b5784e);
+    border-radius: 46% 46% 42% 42%;
+  }
+  .bear-belly {
+    position: absolute; left: 50%; top: 114px; width: 54px; height: 42px; margin-left: -27px;
+background: #eccca4; border-radius: 50%;
+  }
+  .bear-head {
+    position: absolute; left: 50%; top: 4px; width: 108px; height: 86px; margin-left: -54px;
+    background: linear-gradient(180deg, #c08a5a, #b5784e);
+    border-radius: 46% 46% 44% 44%;
+    animation: headWobble 4.5s ease-in-out infinite;
+    transform-origin: 50% 90%;
+  }
+  .bear-ear { position: absolute; top: -4px; width: 34px; height: 34px; background: #b5784e; border-radius: 50%; }
+  .bear-ear.left { left: 14px; }
+  .bear-ear.right { right: 14px; }
+  .bear-ear::after { content: ""; position: absolute; inset: 8px; background: #e0b48f; border-radius: 50%; }
+  .bear-muzzle { position: absolute; left: 50%; bottom: 8px; width: 34px; height: 24px; margin-left: -17px; background: #eccca4; border-radius: 50%; }
+  .bear-nose { position: absolute; left: 50%; top: 50px; width: 16px; height: 11px; margin-left: -8px; background: #6b4226; border-radius: 50%; }
+  .bear-mouth { position: absolute; left: 50%; top: 60px; width: 18px; height: 10px; margin-left: -9px; border-bottom: 2px solid #6b4226; border-radius: 0 0 50% 50%; }
+  .bear-eye { position: absolute; top: 32px; width: 9px; height: 12px; background: #3a2a1e; border-radius: 50%; animation: blink 4.8s ease-in-out infinite; }
+  .bear-eye.left { left: 30px; }
+  .bear-eye.right { right: 30px; }
+  .bear-eye::after { content: ""; position: absolute; right: 1px; top: 1px; width: 3px; height: 3px; background: #fff; border-radius: 50%; }
+  @keyframes blink { 0%, 92%, 100% { transform: scaleY(1); } 95% { transform: scaleY(0.12); } 98% { transform: scaleY(1); } }
+  .bear-cheek { position: absolute; top: 46px; width: 12px; height: 8px; background: #f49a83; border-radius: 50%; opacity: .55; }
+  .bear-cheek.left { left: 16px; }
+  .bear-cheek.right { right: 16px; }
+  .bear-tear { position: absolute; right: 34px; top: 46px; width: 8px; height: 12px; background: linear-gradient(180deg, rgba(125,180,255,.95), rgba(125,180,255,.35)); border-radius: 50% 50% 55% 45%; opacity: 0; animation: tearFall 3.4s ease-in infinite; }
+  @keyframes tearFall {
+    0% { transform: translateY(0); opacity: 0; }
+    18% { opacity: 1; }
+    70% { transform: translateY(34px); opacity: 1; }
+    100% { transform: translateY(52px); opacity: 0; }
+  }
+  .bear-arm { position: absolute; top: 96px; width: 30px; height: 56px; background: linear-gradient(180deg, #c08a5a, #b5784e); border-radius: 45% 45% 50% 50%; }
+  .bear-arm.left { left: 26px; transform: rotate(34deg); }
+  .bear-arm.right { right: 20px; transform-origin: 50% 16px; animation: wave 1.5s ease-in-out infinite; }
+  @keyframes wave { 0%, 100% { transform: rotate(28deg); } 50% { transform: rotate(-22deg); } }
+  .bear-leg { position: absolute; bottom: 0; width: 30px; height: 22px; background: #b5784e; border-radius: 50%; }
+  .bear-leg.left { left: 42px; }
+  .bear-leg.right { right: 42px; }
+  .bear-love { position: absolute; right: -8px; top: 106px; font-size: 22px; animation: loveFloat 2.4s ease-in-out infinite; }
+  @keyframes loveFloat { 0%,100% { transform: translateY(0) scale(1); opacity: .85; } 50% { transform: translateY(-7px) scale(1.18); opacity: 1; } }
+  @keyframes bearBob { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-7px); } }
+  @keyframes headWobble { 0%,100% { transform: rotate(-2.5deg); } 50% { transform: rotate(2.5deg); } }
+
+  .bear-bubble {
+    position: absolute;
+    left: 106px;
+    top: -6px;
+    width: 180px;
+    background: #fff;
+    border: 1px solid #f7d3e3;
+    border-radius: 16px;
+    padding: 10px 12px;
+    font-size: .92rem;
+    font-weight: 700;
+    color: #b83280;
+    text-align: center;
+    line-height: 1.35;
+    box-shadow: 0 12px 26px rgba(190,100,140,.22);
+    animation: bubblePop .45s cubic-bezier(.34,1.56,.64,1) both, bubbleFloat 3s ease-in-out 1s infinite;
+  }
+  .bear-bubble::after {
+    content: "";
+    position: absolute;
+    left: 14px; bottom: -9px;
+    width: 16px; height: 16px;
+    background: #fff;
+    border-right: 1px solid #f7d3e3;
+    border-bottom: 1px solid #f7d3e3;
+    transform: rotate(45deg);
+  }
+  @keyframes bubblePop { from { opacity: 0; transform: translateY(10px) scale(.8); } to { opacity: 1; transform: none; } }
+  @keyframes bubbleFloat { 0%,100% { margin-top: 0; } 50% { margin-top: -6px; } }
+
+  @media (max-width: 640px) {
+    .bear-fixed { transform-origin: left bottom; transform: scale(.78); }
+    .bear-bubble { left: 92px; width: 146px; font-size: .82rem; }
+  }
+
+  /* chhota bear (bubble wala) — pink theme */
+  .bear-fixed .bear-body-el,
+  .bear-fixed .bear-head { background: linear-gradient(180deg, #f5bccb, #ee9db6); }
+  .bear-fixed .bear-arm { background: linear-gradient(180deg, #f5bccb, #ee9db6); }
+  .bear-fixed .bear-ear { background: #ee9db6; }
+  .bear-fixed .bear-ear::after { background: #ffc9d8; }
+  .bear-fixed .bear-belly { background: #ffe7ef; }
+  .bear-fixed .bear-muzzle { background: #ffd6e3; }
+  .bear-fixed .bear-nose { background: #8a3560; }
+  .bear-fixed .bear-mouth { border-bottom-color: #8a3560; }
+  .bear-fixed .bear-eye { background: #5b2440; }
+  .bear-fixed .bear-cheek { background: #ff7f9f; opacity: .6; }
+  .bear-fixed .bear-leg { background: #ee9db6; }
+
+  /* ---------- BARA SILENT BEAR (card ke saath) ---------- */
+  .bear-big {
+    position: fixed;
+    width: 150px;
+    height: 170px;
+    z-index: 2;
+    pointer-events: none;
+    user-select: none;
+    display: none;
+  }
+  .bear-big .bear-scale { transform: scale(2.9); transform-origin: right center; transition: transform .3s ease; }
+  @media (min-width: 900px) and (max-width: 1320px) { .bear-big .bear-scale { transform: scale(2.1); } }
+  @media (min-width: 900px) { .bear-big { display: block; } }
+</style>
+</head>
+<body>
+
+<div id="confettiLayer"></div>
+
+<!-- PAGE 1 -->
+<section class="screen active" id="screen1">
+  <div class="env-wrap" id="envWrap">
+    <div class="env-greeting">A letter for Hurain 💌</div>
+    <div class="envelope" id="envelope">
+      <div class="env-body"></div>
+      <div class="env-pocket"></div>
+      <div class="env-flap"></div>
+      <div class="env-seal">❤️</div>
+    </div>
+    <div class="env-hint">Tap to open 💌</div>
+  </div>
+
+  <div class="card" id="card1">
+    <div class="heart-top">🥺💖</div>
+    <p class="msg-line" data-seed="1"><b>Hurain, sach mein…</b></p>
+    <p class="msg-line" data-seed="2"><b>I'm really sorry.</b> 🥺</p>
+    <p class="msg-line spacer"></p>
+    <p class="msg-line" data-seed="3">Mera kabhi bhi aisa matlab nahi tha ke tumhari dosti ki wajah se meri reputation kharab ho rahi hai.</p>
+    <p class="msg-line" data-seed="4">Mujhe bas tumhari fikar thi, aur us din mujhe khud bhi bohat bura laga tha. Isliye maine kuch zyada bol diya.</p>
+    <p class="msg-line" data-seed="5">Lekin mere dil mein aisa kuch nahi hai.</p>
+    <p class="msg-line" data-seed="6">Tum jaanti ho mujhe kabhi kabhi choti si baat bhi bohat zyada effect kar jati hai.</p>
+    <p class="msg-line" data-seed="7">Aur agar meri wording ki wajah se tumhe hurt hua hai, to mujhe dil se afsos hai. ❤️‍🩹</p>
+  </div>
+
+  <button class="btn-next" id="next1" onclick="goTo(2)">Read This ❤️ →</button>
+</section>
+
+<!-- PAGE 2 -->
+<section class="screen" id="screen2">
+  <div class="card">
+    <p class="msg-line big" data-seed="1">Par ek baat yaad rakhna —</p>
+    <p class="msg-line spacer"></p>
+    <p class="msg-line big" data-seed="2">Tum meri <span style="color:#e11d48;">BEST FRIEND</span> ho,<br>aur ye kabhi badlega nahi. ❤️</p>
+    <p class="msg-line" data-seed="3">Agar ek aur mauka mile,<br>to main tumhe kabhi naraz nahi karunga.</p>
+    <p class="msg-line" data-seed="4" style="font-size:clamp(1.8rem,7vw,2.8rem); margin-top:6px;">🤲🏻</p>
+  </div>
+  <button class="btn-next" onclick="goTo(3)">One More Thing… 🥺 →</button>
+</section>
+
+<!-- PAGE 3 -->
+<section class="screen" id="screen3">
+  <div class="card">
+    <div class="heart-top">🙏</div>
+    <p class="msg-line" data-seed="1"><b>Hurain, main maanta hoon ke</b> meri wording ki wajah se tumhe hurt hua.</p>
+    <p class="msg-line" data-seed="2">Aur uske liye main dil se sorry hoon. ❤️‍🩹</p>
+    <p class="msg-line" data-seed="3">Mera matlab tumhe hurt karna nahi tha,<br>main bas apni fikar ko sahi words mein explain nahi kar saka.</p>
+    <p class="msg-line" data-seed="4">Kabhi kabhi hum jo feel kar rahe hote hain,<br>use explain karte waqt baat kuch aur hi lagne lagti hai.</p>
+    <p class="msg-line" data-seed="5">Bas meri intention ko bhi samajhne ki koshish karna. 🥺</p>
+  </div>
+  <button class="btn-next" onclick="goTo(4)">Almost Done ❤️ →</button>
+</section>
+
+<!-- PAGE 4 -->
+<section class="screen" id="screen4">
+  <div class="card" style="padding-bottom:26px;">
+    <div class="heart-top">🥺</div>
+    <p class="msg-line" data-seed="1"><b>Hurain, tum meri best friend ho</b><br>aur tumhari dosti mere liye <span style="color:#e11d48;">genuinely important</span> hai.</p>
+    <p class="msg-line" data-seed="2">Main bas itna chahta hoon ke<br>meri is galti ki wajah se hamari dosti kharab na ho.</p>
+    <p class="msg-line" data-seed="3">Agar meri baat se tumhe hurt hua hai,<br>to mujhe dil se afsos hai. ❤️‍🩹</p>
+    <p class="msg-line big" data-seed="4">Will you forgive me? 🥺</p>
+  </div>
+</section>
+
+<!-- FIXED YES / NO BAR -->
+<div id="btnBar">
+  <button class="btn yes" onclick="forgive()">YES ❤️</button>
+  <button class="btn no" id="noBtn">NO 😶</button>
+</div>
+
+<!-- CELEBRATION -->
+<section class="screen" id="screen5">
+  <div class="final-card" id="finalCard">
+    <div class="handshake">💖🤝💖</div>
+    <p style="font-size:clamp(1.6rem,6.5vw,2.4rem); font-weight:800; color:#b83280; margin-top:10px;">Thank You Hurain! 🥹</p>
+    <p style="color:#b83280; font-size:clamp(1.2rem,4.8vw,1.5rem); font-weight:700; line-height:1.7; margin-top:18px;">
+      Tum duniya ki sab se achi dost 💖
+    </p>
+  </div>
+</section>
+
+<!-- TEDDY BEAR (har page pe) -->
+<div class="bear-fixed" id="bearFixed">
+  <div class="bear-bubble" id="bearBubble"><span class="bb-text">Hurain... sorry 🥺</span></div>
+  <div class="bear">
+    <div class="bear-body-el"></div>
+    <div class="bear-belly"></div>
+    <div class="bear-head">
+      <div class="bear-ear left"></div>
+      <div class="bear-ear right"></div>
+      <div class="bear-eye left"></div>
+      <div class="bear-eye right"></div>
+      <div class="bear-tear"></div>
+      <div class="bear-cheek left"></div>
+      <div class="bear-cheek right"></div>
+      <div class="bear-muzzle"></div>
+      <div class="bear-nose"></div>
+      <div class="bear-mouth"></div>
+    </div>
+    <div class="bear-arm left"></div>
+    <div class="bear-arm right"></div>
+    <div class="bear-leg left"></div>
+    <div class="bear-leg right"></div>
+    <div class="bear-love">💖</div>
+  </div>
+</div>
+
+<!-- BARA SILENT BEAR (card ke side, no bubble) -->
+<div class="bear-big" id="bearBig">
+  <div class="bear-scale">
+    <div class="bear">
+      <div class="bear-body-el"></div>
+      <div class="bear-belly"></div>
+      <div class="bear-head">
+        <div class="bear-ear left"></div>
+        <div class="bear-ear right"></div>
+        <div class="bear-eye left"></div>
+        <div class="bear-eye right"></div>
+        <div class="bear-cheek left"></div>
+        <div class="bear-cheek right"></div>
+        <div class="bear-muzzle"></div>
+        <div class="bear-nose"></div>
+        <div class="bear-mouth"></div>
+      </div>
+      <div class="bear-arm left"></div>
+      <div class="bear-arm right"></div>
+      <div class="bear-leg left"></div>
+      <div class="bear-leg right"></div>
+      <div class="bear-love">💖</div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const nodesByScreen = {
+    1: document.querySelectorAll("#card1 .msg-line"),
+    2: document.querySelectorAll("#screen2 .card .msg-line"),
+    3: document.querySelectorAll("#screen3 .card .msg-line"),
+    4: document.querySelectorAll("#screen4 .card .msg-line")
+  };
+
+  let current = 1;
+
+  // ---------- teddy bear: bubble & position ----------
+  const bearTexts = {
+    1: "Hurain... sorry 🥺",
+    2: "Best friend forever 💕",
+    3: "Bas maaf kar do na 🥺",
+    4: "Will you forgive me? 🥺",
+    5: "Yaaay! 💖"
+  };
+  const bearBox = document.getElementById("bearBubble");
+  const bearTextEl = bearBox.querySelector(".bb-text");
+
+  function setBear(n) {
+    bearTextEl.textContent = bearTexts[n] || bearTexts[1];
+    bearBox.style.animation = "none";
+    void bearBox.offsetWidth;
+    bearBox.style.animation = "";
+    document.body.classList.toggle("bear-up", n === 4);
+  }
+  setBear(1);
+
+  // ---------- bara silent bear: card ke saath ----------
+  const bearBig = document.getElementById("bearBig");
+  const bearScale = bearBig.querySelector(".bear-scale");
+
+  function anchorForBear() {
+    if (typeof envWrap === "undefined" || !envWrap) return document.querySelector(".screen.active .card");
+    if (current === 1) {
+      return envWrap.style.display === "none"
+        ? document.getElementById("card1")
+        : document.getElementById("envelope");
+    }
+    if (current === 5) return document.getElementById("finalCard");
+    return document.querySelector("#screen" + current + " .card");
+  }
+
+  function placeBigBear() {
+    try {
+      if (window.innerWidth < 900) { bearBig.style.display = "none"; return; }
+      const el = anchorForBear();
+      if (!el) return;
+      const r = el.getBoundingClientRect();
+      if (!r.width || !r.height) return;
+      const freeRight = (window.innerWidth - 620) / 2 - 44;
+      const scale = Math.min(2.9, Math.max(0.9, freeRight / 150));
+      const bearH = 170 * scale;
+      let top = r.top + r.height / 2;
+      if (top - bearH / 2 < 16) top = 16 + bearH / 2;
+      if (top + bearH / 2 > window.innerHeight - 16) top = window.innerHeight - 16 - bearH / 2;
+      bearBig.style.display = "block";
+      bearBig.style.top = top + "px";
+      bearBig.style.right = Math.min(28, Math.max(8, window.innerWidth * 0.02)) + "px";
+      bearBig.style.transform = "translateY(-50%)";
+      bearScale.style.transform = "scale(" + scale + ")";
+    } catch (err) {
+      try { bearBig.style.display = "none"; } catch (e2) {}
+    }
+  }
+  window.addEventListener("resize", placeBigBear);
+
+  // ---------- envelope opening ----------
+  const envWrap = document.getElementById("envWrap");
+  const screen1 = document.getElementById("screen1");
+
+  function openEnvelope() {
+    envWrap.classList.add("opening");
+    setTimeout(() => envWrap.classList.add("gone"), 640);
+    setTimeout(() => {
+      envWrap.style.display = "none";
+      screen1.classList.add("revealed");
+      revealIn(1, 0);
+      placeBigBear();
+    }, 1120);
+  }
+  envWrap.addEventListener("click", openEnvelope, { once: true });
+
+  function goTo(n) {
+    const from = document.getElementById("screen" + current);
+    const to = document.getElementById("screen" + n);
+    if (!from || !to) return;
+
+    from.classList.add("exiting");
+    setTimeout(() => {
+      from.classList.remove("active", "exiting");
+      to.classList.add("active");
+      const list = nodesByScreen[n];
+      list.forEach(el => el.classList.remove("show"));
+      revealIn(n, 0);
+      if (n === 4) document.getElementById("btnBar").classList.add("visible");
+      placeBigBear();
+    }, 380);
+
+    current = n;
+    setBear(n);
+  }
+
+  function revealIn(n, i) {
+    const list = nodesByScreen[n];
+    if (!list || i >= list.length) return;
+    const el = list[i];
+    el.classList.add("show");
+    placeBigBear();
+    setTimeout(() => revealIn(n, i + 1), 360);
+  }
+
+  // ---------- NO button: hamesha bar mein, cursor pas aye to hop ----------
+  const noBtn = document.getElementById("noBtn");
+
+  function btnCenter() {
+    const r = noBtn.getBoundingClientRect();
+    return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+  }
+
+  function shuffle() {
+    noBtn.style.setProperty("--x", ((Math.random() - 0.5) * 200) + "px");
+    noBtn.style.setProperty("--y", (-6 - Math.random() * 44) + "px");
+    noBtn.classList.remove("teleporting");
+    void noBtn.offsetWidth;
+    noBtn.classList.add("teleporting");
+    noBtn.style.order = Math.random() < 0.5 ? "1" : "2";
+  }
+
+  document.addEventListener("mousemove", (e) => {
+    if (current !== 4) return;
+    const c = btnCenter();
+    const d = Math.hypot(e.clientX - c.x, e.clientY - c.y);
+    if (d < 80) shuffle();
+  });
+
+  noBtn.addEventListener("mouseenter", shuffle);
+  noBtn.addEventListener("mouseover", shuffle);
+  noBtn.addEventListener("click", (e) => { e.preventDefault(); shuffle(); });
+  noBtn.addEventListener("touchstart", (e) => { e.preventDefault(); shuffle(); }, { passive: false });
+  noBtn.addEventListener("touchmove", (e) => { e.preventDefault(); shuffle(); }, { passive: false });
+
+  function forgive() {
+    const from = document.getElementById("screen4");
+    from.classList.add("exiting");
+    document.getElementById("btnBar").classList.remove("visible");
+    setTimeout(() => {
+      from.classList.remove("active", "exiting");
+      document.getElementById("screen5").classList.add("active");
+      document.getElementById("finalCard").classList.add("pop");
+      setBear(5);
+      placeBigBear();
+      startCelebration();
+    }, 380);
+  }
+
+  // ---------- background ----------
+  const emojis = ["💖", "💕", "🌸", "✨"];
+  for (let i = 0; i < 6; i++) {
+    const s = document.createElement("span");
+    s.className = "floating";
+    s.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+    s.style.left = Math.random() * 94 + "vw";
+    s.style.bottom = "-6vh";
+    s.style.fontSize = 14 + Math.random() * 14 + "px";
+    s.style.animationDuration = 12 + Math.random() * 8 + "s";
+    s.style.animationDelay = Math.random() * 10 + "s";
+    document.body.appendChild(s);
+  }
+
+  for (let i = 0; i < 4; i++) {
+    const sp = document.createElement("span");
+    sp.className = "sparkle";
+    sp.textContent = "✦";
+    sp.style.color = ["#f472b6", "#fbbf24", "#34d399", "#60a5fa"][i];
+    sp.style.left = Math.random() * 96 + "vw";
+    sp.style.top = Math.random() * 90 + "vh";
+    sp.style.fontSize = 11 + Math.random() * 7 + "px";
+    sp.style.animationDelay = Math.random() * 3 + "s";
+    document.body.appendChild(sp);
+  }
+
+  // ---------- celebration ----------
+  function startCelebration() {
+    const layer = document.getElementById("confettiLayer");
+    for (let i = 0; i < 180; i++) {
+      const c = document.createElement("div");
+      const size = 5 + Math.random() * 8;
+      const colors = ["#f472b6", "#fb7185", "#facc15", "#34d399", "#60a5fa", "#c084fc"];
+      c.style.cssText = `
+        position:absolute; left:${Math.random() * 100}vw; top:-24px;
+        width:${size}px; height:${size * 1.4}px;
+        background:${colors[Math.floor(Math.random() * colors.length)]};
+        border-radius:${Math.random() > 0.5 ? "50%" : "2px"};
+        animation: confettiFall ${3 + Math.random() * 3.5}s linear forwards;
+        animation-delay:${Math.random() * 1.5}s; opacity:0.9;
+      `;
+      layer.appendChild(c);
+    }
+
+    for (let i = 0; i < 20; i++) {
+      setTimeout(() => {
+        const h = document.createElement("span");
+        h.className = "burst-heart";
+        h.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+        h.style.left = 42 + Math.random() * 16 + "vw";
+        h.style.top = 40 + Math.random() * 12 + "vh";
+        const ang = Math.random() * Math.PI * 2;
+        const dist = 120 + Math.random() * 240;
+        h.style.setProperty("--dx", Math.cos(ang) * dist + "px");
+        h.style.setProperty("--dy", Math.sin(ang) * dist - 110 + "px");
+        h.style.setProperty("--rot", (Math.random() * 360 - 180) + "deg");
+        h.style.fontSize = 16 + Math.random() * 18 + "px";
+        document.body.appendChild(h);
+        setTimeout(() => h.remove(), 2800);
+      }, i * 260);
+    }
+
+    setTimeout(() => { layer.innerHTML = ""; }, 9000);
+  }
+
+  const styleSheet = document.createElement("style");
+  styleSheet.textContent = `@keyframes confettiFall { 0% { transform: translateY(0) rotate(0deg); } 100% { transform: translateY(112vh) rotate(760deg); } }`;
+  document.head.appendChild(styleSheet);
+
+  placeBigBear();
+</script>
+</body>
+</html>
