@@ -30,6 +30,7 @@
     transform: translateX(50px);
     transition: opacity 0.5s ease, transform 0.5s ease;
     perspective: 1400px;
+    z-index: 3;
   }
   .screen.active { opacity: 1; pointer-events: auto; transform: translateX(0); }
   .screen.exiting { transform: translateX(-50px); opacity: 0; }
@@ -594,11 +595,26 @@ background: #eccca4; border-radius: 50%;
 
   function placeBigBear() {
     try {
-      if (window.innerWidth < 900) { bearBig.style.display = "none"; return; }
       const el = anchorForBear();
       if (!el) return;
       const r = el.getBoundingClientRect();
       if (!r.width || !r.height) return;
+
+      // MOBILE: bear card ke peeche se jhaakta hai (head upar)
+      if (window.innerWidth < 900) {
+        const scale = Math.min(1.5, Math.max(0.85, window.innerHeight / 340));
+        const bearH = 170 * scale;
+        let top = r.top - bearH * 0.72;
+        if (top < 6) top = 6;
+        bearBig.style.display = "block";
+        bearBig.style.transform = "none";
+        bearBig.style.top = top + "px";
+        bearBig.style.right = "10px";
+        bearScale.style.transform = "scale(" + scale + ")";
+        return;
+      }
+
+      // DESKTOP: card ke side mein
       const freeRight = (window.innerWidth - 620) / 2 - 44;
       const scale = Math.min(2.9, Math.max(0.9, freeRight / 150));
       const bearH = 170 * scale;
